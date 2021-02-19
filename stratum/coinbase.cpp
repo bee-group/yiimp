@@ -1159,23 +1159,23 @@ void coinbase_create(YAAMP_COIND *coind, YAAMP_JOB_TEMPLATE *templ, json_value *
 			}
 		}
 	}
+	
 	if(strcmp(coind->symbol, "BNODE") == 0)
 	{
+		
 		char script_dests[2048] = { 0 };
 		char script_payee[128] = { 0 };
-		char payees[4]; // addresses count
-		int npayees = 2;
+		char payees[4];
+		int npayees = 1;
 		bool masternode_enabled = json_get_bool(json_result, "masternode_payments_enforced");
-		bool evolution_enabled = json_get_bool(json_result, "evolution_payments_started");
-		json_value* evolution = json_get_array(json_result, "evolution");
+		bool superblocks_enabled = json_get_bool(json_result, "evolution_payments_enforced");
+		json_value* superblock = json_get_array(json_result, "evolution");
 		json_value* masternode = json_get_object(json_result, "masternode");
-		
-		
-		if(evolution_enabled && evolution) {
-			for(int i = 0; i < evolution->u.array.length; i++) {
-				const char *payee = json_get_string(evolution->u.array.values[i], "payee");
-				const char *script = json_get_string(evolution->u.array.values[i], "script");
-				json_int_t amount = json_get_int(evolution->u.array.values[i], "amount");
+		if(superblocks_enabled && superblock) {
+			for(int i = 0; i < superblock->u.array.length; i++) {
+				const char *payee = json_get_string(superblock->u.array.values[i], "payee");
+				const char *script = json_get_string(superblock->u.array.values[i], "script");
+				json_int_t amount = json_get_int(superblock->u.array.values[i], "amount");
 				if (!amount) continue;
 				if (script) {
 					npayees++;
@@ -1187,9 +1187,11 @@ void coinbase_create(YAAMP_COIND *coind, YAAMP_JOB_TEMPLATE *templ, json_value *
 					base58_decode(payee, script_payee);
 					job_pack_tx(coind, script_dests, amount, script_payee);
 					//debuglog("%s evolution %s %u\n", coind->symbol, payee, amount);
+				
 				}
 			}
 		}
+		
 		bool started = json_get_bool(json_result, "masternode_payments_started");
 		if (masternode_enabled && masternode && started) {
 			if (json_is_array(masternode)) {
@@ -1223,7 +1225,6 @@ void coinbase_create(YAAMP_COIND *coind, YAAMP_JOB_TEMPLATE *templ, json_value *
 		}
 		sprintf(payees, "%02x", npayees);
 		strcat(templ->coinb2, payees);
-		if (templ->has_segwit_txs) strcat(templ->coinb2, commitment);
 		strcat(templ->coinb2, script_dests);
 		job_pack_tx(coind, templ->coinb2, available, NULL);
 		strcat(templ->coinb2, "00000000"); // locktime
@@ -1239,6 +1240,7 @@ void coinbase_create(YAAMP_COIND *coind, YAAMP_JOB_TEMPLATE *templ, json_value *
 		//debuglog("%s %d dests %s\n", coind->symbol, npayees, script_dests);
 		return;
 	}
+
 	// most recent masternodes rpc (DASH, SIB, MUE, DSR, GBX...)
 	if(coind->hasmasternodes && !coind->oldmasternodes)
 	{
@@ -1399,6 +1401,7 @@ void coinbase_create(YAAMP_COIND *coind, YAAMP_JOB_TEMPLATE *templ, json_value *
 		//debuglog("%s %d dests %s\n", coind->symbol, npayees, script_dests);
 		return;
 	}
+	
 
 	else if(strcmp(coind->symbol, "ENT") == 0)
 	{
